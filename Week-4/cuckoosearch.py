@@ -2,49 +2,39 @@ import numpy as np
 import math
 
 def objective_function(x):
-    return np.sum(x**2)
+    return np.sum(x ** 2)
 
-def initialize_nests(num_nests, num_dimensions):
-    return np.random.uniform(-5, 5, (num_nests, num_dimensions))
+def levy_flight(Lambda=1.5, size=1):
+    sigma_u = (math.gamma(1 + Lambda) * np.sin(np.pi * Lambda / 2) /
+               (math.gamma((1 + Lambda) / 2) * Lambda * 2 ** ((Lambda - 1) / 2))) ** (1 / Lambda)
+    u = np.random.normal(0, sigma_u, size)
+    v = np.random.normal(0, 1, size)
+    step = u / abs(v) ** (1 / Lambda)
+    return step
 
-def levy_flight(solutions, beta=1.5):
-    sigma = (math.gamma(1 + beta) * np.sin(np.pi * beta / 2) / 
-             (math.gamma((1 + beta) / 2) * beta * np.power(2, (beta - 1) / 2)))**(1 / beta)
-    s = np.random.normal(0, sigma, size=solutions.shape)
-    return solutions + 0.01 * s
-
-def evaluate_fitness(nests):
-    fitness = np.apply_along_axis(objective_function, 1, nests)
-    return fitness
-
-def cuckoo_search(num_nests, num_dimensions, max_iterations, Pa):
-    nests = initialize_nests(num_nests, num_dimensions)
-    fitness = evaluate_fitness(nests)
-    best_nest = nests[np.argmin(fitness)]
-    best_fitness = np.min(fitness)
+def cuckoo_search(num_nests=25, num_iterations=50, discovery_rate=0.25, dimension=2):
+    nests = np.random.uniform(-10, 10, (num_nests, dimension))
+    best_nest = nests[0]
+    best_fitness = objective_function(best_nest)
     
-    for iteration in range(max_iterations):
-        new_nests = levy_flight(nests)
-        new_fitness = evaluate_fitness(new_nests)
-        better_nests_idx = new_fitness < fitness
-        nests[better_nests_idx] = new_nests[better_nests_idx]
-        fitness[better_nests_idx] = new_fitness[better_nests_idx]
+    for iteration in range(num_iterations):
+        new_nests = nests + levy_flight(size=(num_nests, dimension)) * (nests - best_nest)
         
-        num_replace = int(Pa * num_nests)
-        worst_nests_idx = np.argsort(fitness)[-num_replace:]
-        nests[worst_nests_idx] = initialize_nests(num_replace, num_dimensions)
-        fitness[worst_nests_idx] = evaluate_fitness(nests[worst_nests_idx])
+        for i in range(num_nests):
+            fitness = objective_function(new_nests[i])
+            if fitness < objective_function(nests[i]):
+                nests[i] = new_nests[i]
+            if fitness < best_fitness:
+                best_nest, best_fitness = new_nests[i], fitness
         
-        current_best_fitness = np.min(fitness)
-        if current_best_fitness < best_fitness:
-            best_fitness = current_best_fitness
-            best_nest = nests[np.argmin(fitness)]
+        num_abandon = int(discovery_rate * num_nests)
+        worst_indices = np.argsort([objective_function(nest) for nest in nests])[-num_abandon:]
+        nests[worst_indices] = np.random.uniform(-10, 10, (num_abandon, dimension))
         
-        print(f"Iteration {iteration + 1}/{max_iterations} - Best Fitness: {best_fitness}")
+        print(f"Iteration {iteration + 1}: Best fitness = {best_fitness}")
     
     return best_nest, best_fitness
 
-best_solution, best_fitness = cuckoo_search(num_nests, num_dimensions, max_iterations, Pa)
-
-print("\nBest solution found:", best_solution)
-print("Best fitness value:", best_fitness)
+best_solution, best_value = cuckoo_search()
+print("Final best solution found:", best_solution)
+print("Final objective function value:", best_value)
