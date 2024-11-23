@@ -1,116 +1,72 @@
+import random
 
-import random 
-
+# Genetic Algorithm parameters
 POPULATION_SIZE = 100
-
 GENES = '''abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOP 
 QRSTUVWXYZ 1234567890, .-;:_!"#%&/()=?@${[]}'''
-
 TARGET = "Genetic Algorithm is cool"
 
-class Individual(object): 
-	
-	def __init__(self, chromosome): 
-		self.chromosome = chromosome 
-		self.fitness = self.cal_fitness() 
+class Individual:
+    def __init__(self, chromosome):
+        self.chromosome = chromosome
+        self.fitness = self.calculate_fitness()
 
-	@classmethod
-	def mutated_genes(self): 
-	
-		global GENES 
-		gene = random.choice(GENES) 
-		return gene 
+    @classmethod
+    def mutated_gene(cls):
+        return random.choice(GENES)
 
-	@classmethod
-	def create_gnome(self): 
+    @classmethod
+    def create_genome(cls):
+        return [cls.mutated_gene() for _ in range(len(TARGET))]
 
-		global TARGET 
-		gnome_len = len(TARGET) 
-		return [self.mutated_genes() for _ in range(gnome_len)] 
+    def mate(self, partner):
+        """
+        Perform crossover and mutation to generate offspring.
+        """
+        child_chromosome = [
+            gp1 if random.random() < 0.45 else
+            gp2 if random.random() < 0.90 else
+            self.mutated_gene()
+            for gp1, gp2 in zip(self.chromosome, partner.chromosome)
+        ]
+        return Individual(child_chromosome)
 
-	def mate(self, par2): 
- 
-		child_chromosome = [] 
-		for gp1, gp2 in zip(self.chromosome, par2.chromosome):	 
+    def calculate_fitness(self):
+        """
+        Calculate fitness as the number of characters that differ from the target.
+        """
+        return sum(gs != gt for gs, gt in zip(self.chromosome, TARGET))
 
-			prob = random.random() 
+def main():
+    generation = 1
+    population = [Individual(Individual.create_genome()) for _ in range(POPULATION_SIZE)]
 
-		
-			if prob < 0.45: 
-				child_chromosome.append(gp1) 
+    while True:
+        # Sort population by fitness (lower is better)
+        population.sort(key=lambda x: x.fitness)
 
-			elif prob < 0.90: 
-				child_chromosome.append(gp2) 
+        # Check if the best individual has reached the target
+        if population[0].fitness == 0:
+            break
 
-			
-			else: 
-				child_chromosome.append(self.mutated_genes()) 
+        # Elitism: carry over top 10% of the population
+        next_generation = population[:POPULATION_SIZE // 10]
 
-		return Individual(child_chromosome) 
+        # Generate the remaining 90% of the new population
+        for _ in range(POPULATION_SIZE - len(next_generation)):
+            parent1 = random.choice(population[:50])  # Top 50 for parent selection
+            parent2 = random.choice(population[:50])
+            child = parent1.mate(parent2)
+            next_generation.append(child)
 
-	def cal_fitness(self): 
-	
-		global TARGET 
-		fitness = 0
-		for gs, gt in zip(self.chromosome, TARGET): 
-			if gs != gt: fitness+= 1
-		return fitness 
+        population = next_generation
 
-def main(): 
-	global POPULATION_SIZE 
+        # Print the best individual of this generation
+        print(f"Generation: {generation}\tString: {''.join(population[0].chromosome)}\tFitness: {population[0].fitness}")
+        generation += 1
 
-	 
-	generation = 1
+    # Print the final result
+    print(f"Generation: {generation}\tString: {''.join(population[0].chromosome)}\tFitness: {population[0].fitness}")
 
-	found = False
-	population = [] 
-
-	
-	for _ in range(POPULATION_SIZE): 
-				gnome = Individual.create_gnome() 
-				population.append(Individual(gnome)) 
-
-	while not found: 
-
-
-		population = sorted(population, key = lambda x:x.fitness) 
-
-
-		if population[0].fitness <= 0: 
-			found = True
-			break
-
-
-		new_generation = [] 
-
-
-
-		s = int((10*POPULATION_SIZE)/100) 
-		new_generation.extend(population[:s]) 
-
-
-
-		s = int((90*POPULATION_SIZE)/100) 
-		for _ in range(s): 
-			parent1 = random.choice(population[:50]) 
-			parent2 = random.choice(population[:50]) 
-			child = parent1.mate(parent2) 
-			new_generation.append(child) 
-
-		population = new_generation 
-
-		print("Generation: {}\tString: {}\tFitness: {}".
-			format(generation, 
-			"".join(population[0].chromosome), 
-			population[0].fitness)) 
-
-		generation += 1
-
-	
-	print("Generation: {}\tString: {}\tFitness: {}".
-		format(generation, 
-		"".join(population[0].chromosome), 
-		population[0].fitness)) 
-
-if __name__ == '__main__': 
-	main() 
+if __name__ == '__main__':
+    main()
