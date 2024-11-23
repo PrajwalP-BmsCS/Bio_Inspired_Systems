@@ -1,43 +1,82 @@
-import random, math, sys
+import random
+import math
+import copy
+import sys
 
+# Fitness functions
 def fitness_rastrigin(position):
-    return sum(x**2 - 10 * math.cos(2 * math.pi * x) + 10 for x in position)
+    return sum((xi * xi) - (10 * math.cos(2 * math.pi * xi)) + 10 for xi in position)
 
 def fitness_sphere(position):
-    return sum(x**2 for x in position)
+    return sum(xi * xi for xi in position)
 
+# Particle class
 class Particle:
     def __init__(self, fitness, dim, minx, maxx, seed):
         rnd = random.Random(seed)
         self.position = [rnd.uniform(minx, maxx) for _ in range(dim)]
         self.velocity = [rnd.uniform(minx, maxx) for _ in range(dim)]
         self.fitness = fitness(self.position)
-        self.best_pos = self.position[:]
+        self.best_part_pos = self.position[:]
+        self.best_part_fitnessVal = self.fitness
 
-def pso(fitness, max_iter, num_particles, dim, minx, maxx):
+# PSO algorithm
+def pso(fitness, max_iter, n, dim, minx, maxx):
     w, c1, c2 = 0.729, 1.49445, 1.49445
     rnd = random.Random(0)
-    swarm = [Particle(fitness, dim, minx, maxx, i) for i in range(num_particles)]
-    global_best_pos = min(swarm, key=lambda p: p.fitness).position
+    swarm = [Particle(fitness, dim, minx, maxx, i) for i in range(n)]
+    best_swarm_pos = swarm[0].position[:]
+    best_swarm_fitnessVal = sys.float_info.max
 
-    for _ in range(max_iter):
-        for p in swarm:
-            for i in range(dim):
+    for particle in swarm:
+        if particle.fitness < best_swarm_fitnessVal:
+            best_swarm_fitnessVal = particle.fitness
+            best_swarm_pos = particle.position[:]
+
+    for Iter in range(max_iter):
+        if Iter % 10 == 0 and Iter > 0:
+            print(f"Iter = {Iter} best fitness = {best_swarm_fitnessVal:.3f}")
+        for particle in swarm:
+            for k in range(dim):
                 r1, r2 = rnd.random(), rnd.random()
-                p.velocity[i] = w * p.velocity[i] + c1 * r1 * (p.best_pos[i] - p.position[i]) + c2 * r2 * (global_best_pos[i] - p.position[i])
-                p.position[i] = max(minx, min(maxx, p.position[i] + p.velocity[i]))
-            p.fitness = fitness(p.position)
-            if p.fitness < fitness(p.best_pos):
-                p.best_pos = p.position[:]
-        global_best_pos = min(swarm, key=lambda p: p.fitness).position
+                particle.velocity[k] = (
+                    w * particle.velocity[k]
+                    + c1 * r1 * (particle.best_part_pos[k] - particle.position[k])
+                    + c2 * r2 * (best_swarm_pos[k] - particle.position[k])
+                )
+                particle.velocity[k] = max(minx, min(maxx, particle.velocity[k]))
+                particle.position[k] += particle.velocity[k]
 
-    return global_best_pos
+            particle.fitness = fitness(particle.position)
+            if particle.fitness < particle.best_part_fitnessVal:
+                particle.best_part_fitnessVal = particle.fitness
+                particle.best_part_pos = particle.position[:]
+            if particle.fitness < best_swarm_fitnessVal:
+                best_swarm_fitnessVal = particle.fitness
+                best_swarm_pos = particle.position[:]
 
+    return best_swarm_pos
+
+# Driver code
 def run_pso(fitness_func, func_name, dim=3, num_particles=50, max_iter=100):
-    print(f"\nRunning PSO on {func_name}, dim={dim}, particles={num_particles}, iter={max_iter}")
-    best_pos = pso(fitness_func, max_iter, num_particles, dim, -10.0, 10.0)
-    print(f"Best solution: {['%.6f' % x for x in best_pos]}, Fitness: {fitness_func(best_pos):.6f}")
+    print(f"\nBegin particle swarm optimization on {func_name} function\n")
+    print(f"Goal is to minimize {func_name} function in {dim} variables")
+    print(f"Function has known min = 0.0 at ({', '.join(['0'] * dim)})")
+    print(f"Setting num_particles = {num_particles}")
+    print(f"Setting max_iter = {max_iter}")
+    print("\nStarting PSO algorithm\n")
 
-# Run for both functions
+    best_position = pso(fitness_func, max_iter, num_particles, dim, -10.0, 10.0)
+
+    print("\nPSO completed\n")
+    print("\nBest solution found:")
+    print(["%.6f" % x for x in best_position])
+    print(f"Fitness of best solution = {fitness_func(best_position):.6f}")
+    print(f"\nEnd particle swarm for {func_name} function\n")
+
+# Run for Rastrigin and Sphere functions
 run_pso(fitness_rastrigin, "Rastrigin")
 run_pso(fitness_sphere, "Sphere")
+
+reduce size 
+
