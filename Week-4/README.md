@@ -1,3 +1,3 @@
 ### Output:
-![image](https://github.com/user-attachments/assets/2b10574e-f74c-4c2f-9b9e-b7bafb2955d6)
+![image](https://github.com/user-attachments/assets/53a57a50-0a36-4d55-931e-dab5eaf631c7)
 
