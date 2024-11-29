@@ -4,7 +4,7 @@ import random
 POPULATION_SIZE = 100
 GENES = '''abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOP 
 QRSTUVWXYZ 1234567890, .-;:_!"#%&/()=?@${[]}'''
-TARGET = "Genetic Algorithm is cool"
+TARGET = "cogito ergo sum"
 
 class Individual:
     def __init__(self, chromosome):
@@ -69,4 +69,5 @@ def main():
     print(f"Generation: {generation}\tString: {''.join(population[0].chromosome)}\tFitness: {population[0].fitness}")
 
 if __name__ == '__main__':
+    print("Prajwal.P 1BM22CS200\n")
     main()
