@@ -75,8 +75,8 @@ def run_pso(fitness_func, func_name, dim=3, num_particles=50, max_iter=100):
     print(f"\nEnd particle swarm for {func_name} function\n")
 
 # Run for Rastrigin and Sphere functions
+
 run_pso(fitness_rastrigin, "Rastrigin")
 run_pso(fitness_sphere, "Sphere")
 
-reduce size 
 
