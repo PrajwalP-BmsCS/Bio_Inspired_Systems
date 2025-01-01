@@ -1,79 +1,84 @@
 #include <stdio.h>
 #include <string.h>
-#define N strlen(poly) // N is the length of the generator polynomial
 
-char data[30];
-char checksum[30];
-char poly[10];
-int datalen, i, j;
+char data[20], check_value[30], poly[10];
+int data_length, poly_length;
 
 void XOR() {
-    for (j = 0; j < N; j++) { // XOR operation starts from the first bit
-        checksum[j] = (checksum[j] == poly[j]) ? '0' : '1';
+    for (int j = 1; j < poly_length; j++) {
+        check_value[j] = (check_value[j] == poly[j]) ? '0' : '1';
     }
 }
 
 void crc() {
-    // Copy the first N bits of data to checksum
-    for (i = 0; i < N; i++) {
-        checksum[i] = data[i];
+    for (int i = 0; i < poly_length; i++) {
+        check_value[i] = data[i];
     }
 
+    int current_bit = poly_length;
     do {
-        if (checksum[0] == '1') {
-            XOR(); // Perform XOR if the first bit is 1
+        if (check_value[0] == '1') XOR();
+        for (int j = 0; j < poly_length - 1; j++) {
+            check_value[j] = check_value[j + 1];
         }
-
-        // Shift left by one position
-        for (j = 0; j < N - 1; j++) {
-            checksum[j] = checksum[j + 1];
-        }
-
-        // Append the next bit from data
-        checksum[j] = data[i++];
-
-    } while (i < datalen + N - 1); // Continue until all bits are processed
+        check_value[poly_length - 1] = data[current_bit++];
+    } while (current_bit <= data_length + poly_length - 1);
 }
 
 void receiver() {
-    printf("\nEnter the received data: ");
+    printf("Enter the received data: ");
     scanf("%s", data);
 
-    printf("Received Data: %s\n", data);
+    printf("Data received: %s\n", data);
 
-    datalen = strlen(data);
     crc();
-    // Check if the checksum contains any non-zero bits
-    for (i = 0; (i < N - 1) && (checksum[i] == '1'); i++);
-    
-    if (i < N - 1)
-        printf("\nError detected in received data. %s\n",&checksum[i]);
-    else
-        printf("\nNo error detected in received data. %s\n",&checksum[i]);
+
+    int error_found = 0;
+    for (int i = 0; i < poly_length - 1; i++) {
+        if (check_value[i] == '1') {
+            error_found = 1;
+            break;
+        }
+    }
+
+    if (error_found) {
+        printf("Error detected\n");
+    } else {
+        printf("No error detected\n");
+    }
 }
 
 int main() {
-    printf("Enter the data bits: ");
+    printf("Enter data to be transmitted: ");
     scanf("%s", data);
 
-    printf("Enter the generator polynomial: ");
+    printf("Enter the divisor polynomial: ");
     scanf("%s", poly);
 
-    datalen = strlen(data);
+    data_length = strlen(data);
+    poly_length = strlen(poly);
 
-    // Append (N-1) zero bits to the data
-    for (i = datalen; i < datalen + N - 1; i++) {
+    // Pad data with zeros
+    for (int i = data_length; i < data_length + poly_length - 1; i++) {
         data[i] = '0';
     }
-    data[datalen + N - 1] = '\0'; // Null-terminate the string
+    data[data_length + poly_length - 1] = '\0';
+
+    printf("Data padded with n-1 zeroes: %s\n", data);
 
     crc();
 
-    printf("CRC Code: %s\n", checksum);
+    printf("CRC value is: %s\n", check_value);
+
+    // Append CRC to data
+    for (int i = data_length; i < data_length + poly_length - 1; i++) {
+        data[i] = check_value[i - data_length];
+    }
+    data[data_length + poly_length - 1] = '\0';
+
+    printf("Final codeword to be sent: %s\n", data);
 
     receiver();
 
     return 0;
 }
-
-
